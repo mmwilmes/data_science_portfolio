@@ -73,7 +73,7 @@ ggplot(iris, aes(x = Sepal.Length, y = Petal.Length)) + geom_point() + aes(color
 ggplot(iris) + aes(x = Species, y = Sepal.Width, fill = Species) + geom_violin()
 ```
 
-![](iris_files/figure-markdown_github/unnamed-chunk-1-1.png)
+![](iris_files/figure-markdown_github/violin%20plot%20of%20sepal%20width-1.png)
 
 Analysis and visualisation
 --------------------------
@@ -211,7 +211,7 @@ select(iris, -Species) %>% correlate() %>% network_plot()
     ## Correlation method: 'pearson'
     ## Missing treated using: 'pairwise.complete.obs'
 
-![](iris_files/figure-markdown_github/unnamed-chunk-2-1.png)
+![](iris_files/figure-markdown_github/correlation%20in%20numbers-1.png)
 
 ``` r
 chart.Correlation(iris[,1:4], histogram=TRUE, pch=19)
@@ -292,7 +292,7 @@ ggplot(iris, aes(x = Petal.Length, y = Petal.Width, color = Species)) +
       geom_point(data = iris, aes(x = Petal.Length, y = Petal.Width), shape = 7, color = cluster$cluster)
 ```
 
-![](iris_files/figure-markdown_github/unnamed-chunk-3-1.png)
+![](iris_files/figure-markdown_github/visual%20representation%20of%20clustering%20accuracy-1.png)
 
 useful resources:
 -----------------

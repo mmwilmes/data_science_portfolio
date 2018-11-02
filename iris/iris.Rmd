@@ -42,7 +42,7 @@ ggplot(iris, aes(x = Sepal.Length, y = Petal.Length)) + geom_point() + aes(color
 ```
 
 
-```{r}
+```{r violin plot of sepal width}
 ggplot(iris) + aes(x = Species, y = Sepal.Width, fill = Species) + geom_violin()
 ```
 
@@ -76,7 +76,7 @@ select(iris, -Species) %>% cor()
 ```
 Numerical confirmation that Petal.Length ~ Petal.Width are highly (positively) correlated.
 
-```{r}
+```{r correlation in numbers}
 # use clustering to visualize correlation of variables; 
 # the closer, the stronger correlated
 # blue for positive correlation, red for negative
@@ -123,7 +123,7 @@ and $μ_k$ is the mean value of the points assigned to the cluster $C_k$
 ## Visual representation of k-means clustering results
 
 
-```{r}
+```{r visual representation of clustering accuracy}
 ggplot(iris, aes(x = Petal.Length, y = Petal.Width, color = Species)) + 
      geom_point(size = 4) +
       geom_point(data = iris, aes(x = Petal.Length, y = Petal.Width), shape = 7, color = cluster$cluster)
