@@ -1,0 +1,135 @@
+---
+title: "Iris dataset exploration, analysis, visualisation, k-means clustering"
+output: github_document
+theme: readable
+author: "Madlen Wilmes"
+date: "`r format(Sys.Date())`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+library(corrr)   # use network_plot to plot correlation
+library(PerformanceAnalytics) # plot sophisticated correlation matrix
+```
+
+
+## Purpose of the script
+
+Examplary analysis of the iconic iris data set. This script uses descriptive statistics, correlation analysis and visualization to explore a data set in R. It also uses k-means clustering to determine the species from two quantitative traits. The letter is an example of an unsupervised learning algorithm. In the end, the clustering results are compared to the actual species data.
+
+## Load Data and explore
+
+```{r load_data}
+data(iris)
+attach(iris)
+head(iris, 3)
+str(iris)
+summary(iris)
+```
+
+The data is structured in 150 rows and 5 columns. Rows represent individual measurements of a flower in cm. The columns provide information on the sepal length, sepal width, petal length and petal width and species of each flower. There are 50 measurements for each of the three species, no missing data.
+
+## Explorative plots
+
+```{r simple correlation matrix}
+pairs(iris[,1:4])
+```
+
+```{r sepal by petal length by species}
+ggplot(iris, aes(x = Sepal.Length, y = Petal.Length)) + geom_point() + aes(color = Species)
+```
+
+
+```{r}
+ggplot(iris) + aes(x = Species, y = Sepal.Width, fill = Species) + geom_violin()
+```
+
+
+## Analysis and visualisation
+
+
+```{r anova and plot with regression line by species}
+# calculate all possible pairings (doubled as all are either x or y, doesn't matter with small data set like this)
+for(traity in c("Sepal.Width", "Sepal.Width", "Petal.Length", "Petal.Width"))
+for(traitx in c("Sepal.Width", "Sepal.Width", "Petal.Length", "Petal.Width")){
+  if(traitx == traity) next
+  print(paste(traity, "by", traitx, sep=" "))
+  print(summary(aov(iris[,traity] ~ iris[,traitx])))
+  print(
+    ggplot(iris, aes(x = iris[,traitx], y = iris[,traity], color = Species)) + 
+      geom_point() + 
+      geom_smooth(method = "lm", se = T) +
+      xlab(traitx) +
+      ylab(traity) +
+      ggtitle(paste(traity, "by", traitx, sep=" "))
+  )
+    }
+```
+
+Strong association of Petal.Length ~ Petal.Width (highest F-value)
+
+
+```{r correlation matrix}
+select(iris, -Species) %>% cor()
+```
+Numerical confirmation that Petal.Length ~ Petal.Width are highly (positively) correlated.
+
+```{r}
+# use clustering to visualize correlation of variables; 
+# the closer, the stronger correlated
+# blue for positive correlation, red for negative
+select(iris, -Species) %>% correlate() %>% network_plot()
+```
+```{r plot sophisticated correlation matrix}
+chart.Correlation(iris[,1:4], histogram=TRUE, pch=19)
+```
+## k-means clustering
+
+- form clusters but assigning a group to data; values in one group (cluster) are closer together than in another
+- unsupervised (i.e., assumes no known labels, no expected oucome), exploratory analysis
+- randomly choose centroid, minimize
+- k is the number of clusters (here known, as there are three species; often k is unknown so choosing k is another issue)
+- cannot deal with missing data
+- bases on calculation of distance matrix (i.e., a measure of similarity), several are available, Euclidian is most common
+- algorithm randomly assigns value to cluster -> calclulates new centroid (mean value of all the data points in the cluster at this step) -> repeat until within cluster variation cannot be reduced any further (within cluster variation is sum of the euclidean distance between the data points and their respective cluster centroids)
+
+Caution:
+- sensitive to outliers (explore data first!)
+- results rely on sensible choice of number of clusters
+
+There is no normalization required for the iris data set as all traits are measured in the same unit (cm). If different units where used (and conversion not possible), values should be normalized so they have mean zero and standard deviation one.
+
+```{r k-means clustering}
+set.seed(9) # ensure reporducibility by setting seed
+cluster <- kmeans(iris[, c("Petal.Length", "Petal.Width")], centers = 3, nstart = 25) 
+# centers = k
+# nstart = number of random sets
+# report set with lowest within cluster variation
+cluster
+# given that we know the actual species, we can compare cluster results
+table(cluster$cluster, iris$Species)
+```
+
+The default method is Hartigan-Wong which defines the total within-cluster variation as the sum of squared Euclidean distances between values and the corresponding centroid
+
+$$
+W(C_k) = \sum_ {x_i\in C_k} (x_i - μ_k)^2 \\
+$$
+where $x_i$ is a data point belonging to the cluster $C_k$
+and $μ_k$ is the mean value of the points assigned to the cluster $C_k$
+
+## Visual representation of k-means clustering results
+
+
+```{r}
+ggplot(iris, aes(x = Petal.Length, y = Petal.Width, color = Species)) + 
+     geom_point(size = 4) +
+      geom_point(data = iris, aes(x = Petal.Length, y = Petal.Width), shape = 7, color = cluster$cluster)
+```
+
+
+
+## useful resources:
+k-means clustering intro: https://uc-r.github.io/kmeans_clustering
