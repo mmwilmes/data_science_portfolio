@@ -1,0 +1,109 @@
+---
+title: "Iris dataset k-means clustering and visualization"
+output: github_document
+theme: readable
+author: "Madlen Wilmes"
+date: "`r format(Sys.Date())`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+library(factoextra) # plotting clustering results
+```
+
+
+## Purpose of the script
+
+Quantitative traits are clustered using K-means clustering to infer the iris species. The latter is an example of an unsupervised learning algorithm. The clustering results are visually  compared to the actual species data.
+
+## Background info k-means clustering
+
+- form clusters but assigning a group to data; values in one group (cluster) are closer together than in another
+- unsupervised (i.e., assumes no known labels, no expected oucome), exploratory analysis
+- randomly choose centroid, minimize
+- k is the number of clusters (here known, as there are three species; often k is unknown so choosing k is another issue)
+- cannot deal with missing data
+- bases on calculation of distance matrix (i.e., a measure of similarity), several are available, Euclidian is most common
+- algorithm randomly assigns value to cluster -> calclulates new centroid (mean value of all the data points in the cluster at this step) -> repeat until within cluster variation cannot be reduced any further (within cluster variation is sum of the euclidean distance between the data points and their respective cluster centroids)
+
+Caution:
+- sensitive to outliers (explore data first!)
+- results rely on sensible choice of number of clusters
+
+There may be no normalization required for the iris data set as all traits are measured in the same unit (cm). If different units where used (and conversion not possible), values should be normalized so they have mean zero and standard deviation one. 
+
+```{r k-means clustering without normalization}
+set.seed(9) ## ensure reporducibility by setting seed
+cluster <- kmeans(iris[, c("Petal.Length", "Petal.Width")], centers = 3, nstart = 25) 
+## centers = k
+## nstart = number of random sets
+## report set with lowest within cluster variation
+cluster
+```
+### Explanation of results
+
+- cluster: A vector of integers (from 1:k) indicating the cluster to which each point is allocated.
+- centers: A matrix of cluster centers.
+- totss: The total sum of squares.
+- withinss: Vector of within-cluster sum of squares, one component per cluster.
+- tot.withinss: Total within-cluster sum of squares, i.e. sum(withinss).
+- betweenss: The between-cluster sum of squares, i.e. $totss-tot.withinss$.
+- size: The number of points in each cluster.
+
+```{r compare to actual species membership}
+## given that we know the actual species, we can compare cluster results
+table(cluster$cluster, iris$Species)
+```
+
+## Some theory of k-means clustering
+
+The default method is Hartigan-Wong which defines the total within-cluster variation as the sum of squared Euclidean distances between values and the corresponding centroid
+
+$$W(C_k) = \sum_ {x_i\in C_k} (x_i - μ_k)^2 $$
+where $x_i$ is a data point belonging to the cluster $C_k$
+and $μ_k$ is the mean value of the points assigned to the cluster $C_k$
+
+## Repeat analysis with standardized data
+
+```{r normalize data and repeat k-means clustering} 
+iris_normalized <- iris
+## subtracts the mean and divides by the standard deviation
+iris_normalized[,1:4] <- scale(iris[,1:4])
+## check that we get mean of 0 and sd of 1
+colMeans(iris_normalized[,1:4])  ## faster version of apply(scaled.dat, 2, mean)
+apply(iris_normalized[,1:4], 2, sd)
+```
+
+```{r k-means clustering with normalization}
+set.seed(9) ## ensure reporducibility by setting seed
+cluster_n <- kmeans(iris_normalized[, c("Petal.Length", "Petal.Width")], centers = 3, nstart = 25) 
+## centers = k
+## nstart = number of random sets
+## report set with lowest within cluster variation
+cluster_n
+## given that we know the actual species, we can compare cluster results
+table(cluster_n$cluster, iris$Species)
+```
+Standadization has no (or negative) effect on clustering results of Petal.Length and Petal.Width or Petal.Length and Sepal.Width (data not shown).
+
+## Visual representation of k-means clustering results
+
+```{r overlay of clustering results and actual (labeled) data}
+ggplot(iris, aes(x = Petal.Length, y = Petal.Width, color = Species)) + 
+     geom_point(size = 4) +
+      geom_point(data = iris, aes(x = Petal.Length, y = Petal.Width), shape = 7, color = cluster$cluster)
+```
+
+```{r representation of clustering results}
+fviz_cluster(cluster, data = iris[,c("Petal.Length", "Petal.Width")])
+```
+
+## Observations and further questions
+The clustering method provided the most accurate results using only two traits that are highly correlated ("Petal.Length", "Petal.Width") -> shouldn't yield traits that provide highest species separation (highest F-value in anova) better results? So how would one choose the best traits for clustering (as usually no labeled data are available to test which ones perform best).
+Standardization had no (if variance identical) or adverse effect (i.e., worse cluster accuracy) for traits with different variance (e.g., Petal.Width and Sepal.Length) -> that is unexpected as stardartization should minimize effects of trait magnitude (i.e., Sepal.Length higher influence as is is almost 5 times larger [mean 5.843 / mean 1.199]).
+
+## useful resources:
+pre-processing: https://www.edupristine.com/blog/k-means-algorithm
+k-means clustering intro: https://uc-r.github.io/kmeans_clustering

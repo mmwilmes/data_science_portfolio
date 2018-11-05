@@ -1,0 +1,107 @@
+---
+title: "Iris dataset exploration, analysis and visualisation"
+output: github_document
+theme: readable
+author: "Madlen Wilmes"
+date: "`r format(Sys.Date())`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(corrr)   # use network_plot to plot correlation
+library(PerformanceAnalytics) # plot sophisticated correlation matrix
+```
+
+
+## Purpose of the script
+
+Examplary analysis of the iconic iris data set. This script uses descriptive statistics, correlation analysis and visualization to explore a data set in R. 
+
+## Load Data and explore
+
+```{r load_data}
+data(iris)
+attach(iris)
+head(iris, 3)
+str(iris)
+summary(iris)
+```
+
+The data is structured in 150 rows and 5 columns. Rows represent individual measurements of a flower in cm. The columns provide information on the sepal length, sepal width, petal length and petal width and species of each flower. There are 50 measurements for each of the three species, no missing data.
+
+## Explorative plots
+
+```{r simple correlation matrix}
+pairs(iris[,1:4])
+```
+
+```{r sepal by petal length by species}
+ggplot(iris, aes(x = Sepal.Length, y = Petal.Length)) + geom_point() + aes(color = Species)
+```
+
+
+```{r gather data for easier plotting}
+irislong <- iris %>% gather(Trait, Msmn, 1:4)
+```
+
+```{r violin plot for each trait and species}
+ggplot(irislong) + aes(x = Trait, y = Msmn, fill = Species) + geom_violin() +
+  facet_grid(Species) + theme(axis.text.x = element_text(angle = 45, hjust=1))
+```
+```{r Numerical varification of differences in mean and variance}
+sapply(iris[,1:4], var)
+sapply(iris[,1:4], mean)
+```
+
+The means and variance of the different traits differs which might call for normalization before running k-means (despite identical measurement units).
+
+## Analysis and visualisation
+
+```{r for each trait combination, anova and plot with regression line by species}
+## all combinations of traits (no repetition)
+factorcombos <- combn(colnames(iris[,1:4]),2)
+```
+
+```{r}
+## anova and plots for each combination of traits
+for(pos in 1:6){
+  combo <- factorcombos[,pos]
+  print(paste(combo[2], "by", combo[1], sep=" "))
+  print(summary(aov(iris[,combo[1]] ~ iris[,combo[2]])))
+  print(
+    ggplot(iris, aes(x = iris[,combo[1]], y = iris[,combo[2]], color = Species)) + 
+      geom_point() + 
+      geom_smooth(method = "lm", se = T) +
+      xlab(combo[1]) +
+      ylab(combo[2]) +
+      ggtitle(paste(combo[2], "by", combo[1], sep=" "))
+  )
+    }
+```
+
+Strong association of Petal.Length ~ Petal.Width (highest F-value)
+
+
+```{r correlation matrix}
+select(iris, -Species) %>% cor()
+```
+Numerical confirmation that Petal.Length ~ Petal.Width are highly (positively) correlated.
+
+
+```{r visualization of correlation matrix}
+## use clustering to visualize correlation of variables; 
+## the closer, the stronger correlated
+## blue for positive correlation, red for negative
+select(iris, -Species) %>% correlate() %>% network_plot()
+```
+```{r plot sophisticated correlation matrix}
+chart.Correlation(iris[,1:4], histogram=TRUE, pch=19)
+```
+
+## Remaining question
+What descriptive statistics should be used to determine the best combination of traits for k-means clustering? High F-value in ANOVA (as that points to good separation of factors? Should all traits be used with weights? How should they be weighed?
+
+Note that correlated traits can bias the clustering process. Basically 'doubling down' on the same signal and giving it more weight in the clustering process than warranted.
