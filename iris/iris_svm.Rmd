@@ -14,27 +14,22 @@ library(ggplot2)
 
 ## Purpose of the script
 
-Use iris data set to explore clustering via support vector machines (SVM) or Support Vector Clustering (SVC). 
+Use iris data set to explore clustering via support vector machines (SVM) to classify species (supervised machine learning). 
 
 ## A bit of theory
 
 - useful for labeled data with unknown distribution
-- linear SVM is rarely used as real world data is usually more messy than two classes
+- linear SVM is rarely used as real world data is usually more messy
 - linear SVM comprable to linear regression, non-linear SVM comparable to logistic regression
-- for linear, binary data, one chooses a classifier line (y = ax + b) and make it equidistant from data points closest to the line of either side. Maximize the margin (m), so data in the test case can be classified even if farther away from training test cluster.
+- using kernel -> transformation (function) that allows better separation of points in space (compared to linear separator... example: distort a map to reflect travel time instead of linear distance)
+- for linear, binary data, one chooses a classifier line (y = ax + b) -> make it equidistant from data points closest to the line of either side (these are called support vectors) -> maximize the margin (m), so data in the test case can be classified even if farther away from training test cluster
+- margin is twice the distance to the separator line from the support vector
 
 
 Caution:
 - SVM is prone to overfitting
 
 ![Linear SVM](LinearSVM.jpg)
-
-
-Support vector clustering has the following idea: let us transform the points from their space to a higher dimensionality feature space. Find a minimal enclosing sphere in this feature space. In the original space, the sphere becomes a set of disjoing regions. Each region becomes a cluster. (There are also important details like how we choose the feature space, and how we do the transformation, and how we define disjoint regions.)
-
-These disjoint regions are completely different from the regions around K centers in the K-means algorithm. For example, in 2 dimensions, the K-means regions are polygons. The regions of SVC are amoeba-like areas.
-
-
 
 
 ## Load Data
@@ -62,6 +57,7 @@ testset <- subset(testset, select = -c(train))
 ```{r run SVM}
 ## build model – linear kernel and C-classification (soft margin) with default cost (C = 1)
 ## predict Species, using all data points (signified by the dot)
+## if kernel is set to radial, it uses radial basis function (RBF)
 svm_model <- svm(Species ~ ., data = trainset, kernel ="radial")
 summary(svm_model)
 ```
@@ -92,6 +88,10 @@ Misclasification rate = 1 /30 = 0.033
 Classification accuracy = 29 / 30 = 0.967
 
 ## Model Tuning (hyperparameter optimization)
+
+The rate at which a kernel decays is governed by the parameter $\gamma$ – the higher the value of $\gamma$, the more rapid the decay. This serves to illustrate that the RBF kernel is extremely flexible….but the flexibility comes at a price – the danger of overfitting for large values of $\gamma$.  One should choose appropriate values of cost (C) and $\gamma$ so as to ensure that the resulting kernel represents the best possible balance between flexibility and accuracy.
+To reiterate a point made earlier, this means that a solution that has fewer support vectors is likely to be more robust than one with many. Why? Because the data points defining support vectors are ones that are most sensitive to noise- therefore the fewer, the better.
+
 ```{r tune svm model}
 set.seed(42)
 ## don't run more combinations than your machine can handle (with large data sets)
@@ -133,3 +133,6 @@ accu_tab
 ## classification accuracy
 sum(diag(accu_tab)) / sum(accu_tab)
 ```
+
+## Resources
+https://eight2late.wordpress.com/2017/02/07/a-gentle-introduction-to-support-vector-machines-using-r/
