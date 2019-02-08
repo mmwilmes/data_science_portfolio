@@ -27,7 +27,7 @@ Use iris data set to explore clustering via support vector machines (SVM) to cla
 
 
 Caution:
-- SVM is prone to overfitting
+- SVM is prone to overfitting -> consider splitting into training and test set so model (trained on train set) can be tested on independent set -> this comes at the cost of fewer data points to train but overfitted model would make results more questionable in future usage
 
 ![Linear SVM](LinearSVM.jpg)
 
